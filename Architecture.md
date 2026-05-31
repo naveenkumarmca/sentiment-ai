@@ -102,5 +102,37 @@ echo "REACT_APP_API_URL=http://localhost:8000" > .env.local
 npm install
 npm start
 ```
+
 Access frontend at http://localhost:3000
 
+## 6. Security + Ops
+
+- **CORS**: Strict allowlist via env var. Format: https://domain1.com,https://domain2.com. No wildcard in prod
+- **Secrets**: API keys stored only in Render/Vercel environment variables. Never committed
+- **File Upload**: Server-side validation for type .pdf and size <= 50MB. Rejects early
+- **Input Sanitization**: PDF text extracted, not executed. LLM output validated against JSON schema
+- **Rate Limiting**: Not implemented. Recommended: Cloudflare rate limit rules for /jobs endpoint
+- **Logging**: Python logging to stdout. Captured by Render logs. No PII logged
+- **Error Handling**: All endpoints return JSON errors with status codes. Frontend displays err.response.data.detail
+
+## 7. Limitations + Next Steps
+
+| Current Limitation | Impact | Proposed Fix |
+| --- | --- | --- |
+| In-memory job store | All jobs lost on deploy/restart | Migrate to Redis with TTL or Postgres |
+| No auth | Public endpoint, potential abuse/cost | Add Clerk/Auth0 for users + API key auth for programmatic |
+| Single worker | ~5 concurrent PDFs before slowdown | Celery + Redis queue + 2-3 worker dynos |
+| PDF only | Can't process Word/Excel/text | Add python-docx, openpyxl, .txt parsers |
+| No observability | Blind to errors/latency in prod | Add Sentry for errors, Logtail/BetterStack for logs |
+| Scanned PDFs | OCR not supported, returns empty text | Add Tesseract OCR or AWS Textract fallback |
+| Long feedback | 100 pages may timeout LLM | Map-reduce: summarize chunks then summarize summaries | 
+
+## 8. Key Decisions + Tradeoffs
+
+- **Async jobs vs sync requests**: Chose async with polling to avoid 30s Vercel function timeout and 60s Render request timeout. Tradeoff: More complex frontend polling logic
+- **Polling vs WebSockets/SSE**: Polling every 2s is simple and works on free tier. WebSockets need sticky sessions and add infra cost. SSE better for v2
+- **Vercel + Render split**: Vercel excels at static React hosting + CI/CD. Render gives persistent Python workers without serverless cold starts. Tradeoff: Cross-origin CORS config needed
+- **Create React App vs Next.js**: CRA has zero-config for SPA. Next.js adds complexity with no SEO benefit for this app. Can migrate if SSR needed
+- **In-memory vs DB**: In-memory fastest for MVP. No external dependencies. Tradeoff: Not prod-safe. Redis is first upgrade path
+- **BackgroundTasks vs Celery**: FastAPI BackgroundTasks runs in same process. Simpler than Celery for MVP. Celery needed for true scale + retries
+- **Evidence as line numbers**: Simple to implement and verify. Tradeoff: Line numbers shift if PDF re-flowed. Quote snippets more robust for v2
