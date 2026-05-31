@@ -69,6 +69,7 @@ Full-stack web application that processes customer feedback PDFs and returns str
   "recommended_actions": ["string"],
   "limitations": "string | null"
 }
+```
 
 ## 4. Deployment
 
@@ -92,6 +93,7 @@ pip install -r requirements.txt
 export CORS_ORIGINS=http://localhost:3000
 export OPENAI_API_KEY=sk-...
 uvicorn main:app --reload --port 8000
+```
 
 **Frontend**
 ```bash
@@ -99,6 +101,6 @@ cd sentiment-ui
 echo "REACT_APP_API_URL=http://localhost:8000" > .env.local
 npm install
 npm start
-
+```
 Access frontend at http://localhost:3000
 
