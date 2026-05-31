@@ -45,7 +45,7 @@ function App() {
 
   return (
     <div style={{padding: 20, maxWidth: 800, margin: 'auto', fontFamily: 'Arial'}}>
-      <h1>Customer Feedback Sentiment Analyzer</h1>
+      <h1>Consumer Sentiment - AI Analyzer</h1>
 
       <input type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} />
       <button onClick={upload} disabled={!file} style={{marginLeft: 10}}>Analyze</button>
