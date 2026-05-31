@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 const API = process.env.REACT_APP_API_URL;
@@ -9,11 +9,20 @@ function App() {
   const [status, setStatus] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [seconds, setSeconds] = useState(0);
+  const timerRef = useRef(null);
 
   const upload = async () => {
     if (!file) return;
     setError('');
     setResult(null);
+    setSeconds(0);
+
+    // Start timer
+    timerRef.current = setInterval(() => {
+      setSeconds(prev => prev + 1);
+    }, 1000);
+
     const formData = new FormData();
     formData.append('file', file);
     try {
@@ -22,6 +31,7 @@ function App() {
       setStatus('queued');
     } catch (err) {
       setError(err.response?.data?.detail || 'Upload failed');
+      clearInterval(timerRef.current);
     }
   };
 
@@ -34,14 +44,26 @@ function App() {
         if (res.data.status === 'completed') {
           const resultRes = await axios.get(`${API}/jobs/${jobId}/result`);
           setResult(resultRes.data);
+          clearInterval(timerRef.current);
         }
-        if (res.data.status === 'failed') setError(res.data.error);
+        if (res.data.status === 'failed') {
+          setError(res.data.error);
+          clearInterval(timerRef.current);
+        }
       } catch (err) {
         setError('Failed to check status');
+        clearInterval(timerRef.current);
       }
     }, 2000);
     return () => clearInterval(interval);
   }, [jobId, status]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
 
   return (
     <div style={{padding: 20, maxWidth: 800, margin: 'auto', fontFamily: 'Arial'}}>
@@ -49,6 +71,8 @@ function App() {
 
       <input type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} />
       <button onClick={upload} disabled={!file} style={{marginLeft: 10}}>Analyze</button>
+
+      {jobId &&!result &&!error && <p>Processing... {seconds}s</p>}
 
       {jobId && <p><b>Job ID:</b> {jobId}</p>}
       {status && <p><b>Status:</b> {status}</p>}
