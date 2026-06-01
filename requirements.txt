@@ -14,3 +14,6 @@ celery==5.4.0
 redis==5.0.8
 google-generativeai==0.8.3
 PyMuPDF==1.24.10
+pytesseract
+pdf2image
+Pillow
